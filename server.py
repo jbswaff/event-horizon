@@ -145,7 +145,7 @@ def api_get_blocking(pihole: dict, sid: str, csrf: str):
     status, raw, js = http_json("GET", url, headers=api_headers(sid, csrf))
     blocking = js.get("blocking", "")
     timer = js.get("timer", None)  # may be null
-    # v6 commonly returns "enabled"/"disabled"
+    # v6 returns "enabled"/"disabled"
     if isinstance(blocking, str):
         return blocking, timer
     if blocking is True:
@@ -158,8 +158,7 @@ def api_disable_for(pihole: dict, seconds: int):
     sid, csrf = api_auth(pihole)
 
     # Disable call.
-    # This is the common v6 pattern: set blocking disabled with a timer.
-    # If your Pi-hole expects a different payload, this is where to adjust.
+    # Set blocking disabled with a timer.
     url = f"{pihole['base']}/api/dns/blocking"
     http_json("POST", url, headers=api_headers(sid, csrf), payload={"blocking": False, "timer": seconds})
 
@@ -173,89 +172,77 @@ def api_disable_for(pihole: dict, seconds: int):
 # ----------------------------
 
 WARNING_HTML = """<!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Protection Control</title>
   <style>
-    body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; padding: 0; background: #ffffff; }}
-    .wrap {{ max-width: 720px; margin: 0 auto; padding: 24px; }}
-    .warn {{ color: #b00020; font-size: 18px; line-height: 1.35; margin-bottom: 22px; }}
-    .btn {{ display: block; width: 100%; border: 0; border-radius: 12px; padding: 18px 14px; font-size: 20px; font-weight: 700; background: #d32f2f; color: #ffffff; }}
-    .sub {{ margin-top: 18px; color: #b00020; font-size: 16px; }}
-    .links {{ margin-top: 18px; font-size: 14px; }}
-    a {{ color: #1565c0; text-decoration: none; }}
-    a:hover {{ text-decoration: underline; }}
+    body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #ffffff; color: #111; }
+    .wrap { max-width: 560px; margin: 0 auto; padding: 24px 18px; }
+    h1 { margin: 0 0 16px; font-size: 28px; font-weight: 700; }
+    .warning {
+      border: 2px solid #b00000;
+      background: #fff5f5;
+      color: #b00000;
+      padding: 14px 14px;
+      border-radius: 10px;
+      font-size: 16px;
+      line-height: 1.35;
+    }
+    .btn {
+      width: 100%;
+      margin-top: 18px;
+      padding: 18px 14px;
+      font-size: 20px;
+      font-weight: 800;
+      border: none;
+      border-radius: 12px;
+      background: #d00000;
+      color: #ffffff;
+      cursor: pointer;
+    }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .subnote {
+      margin-top: 12px;
+      color: #b00000;
+      font-weight: 700;
+      text-align: center;
+    }
+    .footer { margin-top: 22px; font-size: 13px; color: #666; text-align: center; }
+    .logs-link { font-size: 14px; margin-top: 18px; text-align: center; }
+    .logs-link a { color: #1565c0; text-decoration: none; }
+    .logs-link a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="warn">
-      <strong>Warning:</strong> Disabling protection makes you more vulnerable to scams, fake “support” popups, and malicious ads.
-      Proceed at your own risk. If something looks suspicious, close the page immediately.
+    <h1>Protection Control</h1>
+
+    <div class="warning">
+      <strong>Warning:</strong> Disabling protection makes you significantly more vulnerable to scams,
+      malicious ads, fake download buttons, and dangerous websites.
+      If you proceed, assume <strong>anything you see could be a trap.</strong> Proceed at your own risk.
     </div>
 
     <form method="POST" action="/disable">
-      <button class="btn" type="submit">Disable Protection for {minutes} Minutes</button>
+      <button class="btn" type="submit" id="btn">Disable Protection for {minutes} Minutes</button>
     </form>
 
-    <div class="sub">This is temporary. Protection should re-enable automatically.</div>
+    <div class="subnote">Only use this if something is not working as expected.</div>
+    <div class="footer">Protection will be disabled for {minutes} minute(s) and will return automatically.</div>
 
-    {logs_link}
-  </div>
-</body>
-</html>
-"""
-
-SUCCESS_HTML = """<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Protection Disabled</title>
-  <style>
-    body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; padding: 0; background: #ffffff; }}
-    .wrap {{ max-width: 720px; margin: 0 auto; padding: 24px; text-align: center; }}
-    .timer {{ font-size: 48px; font-weight: 800; color: #111; margin-top: 18px; }}
-    .msg {{ margin-top: 18px; font-size: 16px; color: #b00020; line-height: 1.35; }}
-    .status {{ margin-top: 18px; font-size: 14px; color: #333; text-align: left; }}
-    .ok {{ color: #2e7d32; font-weight: 700; }}
-    .bad {{ color: #b00020; font-weight: 700; }}
-    ul {{ margin: 8px 0 0 18px; padding: 0; }}
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <div class="timer" id="t">{mm}:{ss}</div>
-    <div class="msg">
-      Ads enabled. Try your desired action again. Use extreme caution while protection is disabled.
-    </div>
-
-    <div class="status">
-      <div><strong>Result:</strong> {result_line}</div>
-      {details_block}
+    <div class="logs-link">
+      {logs_link}
     </div>
   </div>
 
-<script>
-(function() {{
-  var remaining = {seconds};
-  function fmt(n) {{ return (n < 10 ? "0" : "") + n; }}
-  function tick() {{
-    var m = Math.floor(remaining / 60);
-    var s = remaining % 60;
-    document.getElementById("t").textContent = fmt(m) + ":" + fmt(s);
-    if (remaining <= 0) {{
-      window.location.href = "/";
-      return;
-    }}
-    remaining -= 1;
-    setTimeout(tick, 1000);
-  }}
-  tick();
-}})();
-</script>
+  <script>
+    // Small UX improvement: disable button after press to reduce repeat clicks
+    const form = document.querySelector('form');
+    const btn = document.getElementById('btn');
+    form.addEventListener('submit', () => { btn.disabled = true; btn.textContent = 'Working...'; });
+  </script>
 </body>
 </html>
 """
@@ -336,7 +323,6 @@ class Handler(BaseHTTPRequestHandler):
     server_version = "event-horizon/1.0"
 
     def _client_ip(self) -> str:
-        # If you later add reverse proxy, you'd use X-Forwarded-For.
         return self.client_address[0]
 
     def _send_html(self, html: str, code: int = 200):
@@ -359,7 +345,7 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path == "/logs":
-            # Unauthenticated logs page (per your decision)
+            # The logs page does not require authentication
             try:
                 ensure_log_dir()
                 lines = []
@@ -392,7 +378,7 @@ class Handler(BaseHTTPRequestHandler):
         now = time.time()
         if (now - LAST_PRESS_EPOCH) < COOLDOWN_SECONDS:
             log_request(client_ip, "cooldown=active")
-            # Show timer page anyway to avoid confusing end users
+            # Show timer page even if cooldown is active to avoid confusing users
             mm = DISABLE_SECONDS // 60
             ss = DISABLE_SECONDS % 60
             html = SUCCESS_HTML.format(

@@ -27,25 +27,21 @@ need_root(){
 TTY_FD=3
 
 open_tty(){
-  # If stdin is already a TTY, we can just read normally from stdin.
   if [[ -t 0 ]]; then
     return 0
   fi
 
-  # If stdin is not a TTY (e.g., curl | bash), use /dev/tty for prompts.
   if [[ -r /dev/tty ]]; then
     exec {TTY_FD}</dev/tty
     return 0
   fi
 
   err "No interactive TTY available."
-  err "Do not run this installer in a context without a terminal."
   err "Use: curl -fsSL <url> -o install.sh && sudo bash install.sh"
   exit 1
 }
 
 read_prompt(){
-  # Usage: read_prompt [-s] "Prompt text" varname
   local secret="no"
   if [[ "${1:-}" == "-s" ]]; then
     secret="yes"
@@ -90,16 +86,13 @@ valid_port(){
 }
 
 valid_name(){
-  # Friendly name: no spaces, only A-Z a-z 0-9 _ -
   [[ "${1}" =~ ^[A-Za-z0-9_-]+$ ]]
 }
 
 detect_ips(){
-  # Primary IP from default route (best-effort)
   local primary=""
   primary="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '/src/ {for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}' | head -n1 || true)"
 
-  # All non-loopback IPv4s
   local all_ips=""
   all_ips="$(ip -4 addr show scope global 2>/dev/null | awk '/inet /{print $2}' | cut -d/ -f1 | tr '\n' ' ' | sed 's/[[:space:]]\+$//' || true)"
 
@@ -221,12 +214,10 @@ ExecStart=/usr/bin/python3 ${PY_FILE}
 Restart=on-failure
 RestartSec=2
 
-# Allow binding to privileged ports like 80 without running as root
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 NoNewPrivileges=true
 
-# Basic hardening
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
@@ -279,9 +270,9 @@ api_test_one(){
   local baseurl="$1"
   local apppass="$2"
 
-  # POST /api/auth -> sid
-  local auth_json sid
-  auth_json="$(curl -fsS --max-time 4 \
+  # POST /api/auth -> sid + csrf
+  local auth_json sid csrf
+  auth_json="$(curl -fsS --max-time 6 \
     -H "Content-Type: application/json" \
     -d "{\"password\":\"${apppass}\"}" \
     "${baseurl}/api/auth" 2>/dev/null || true)"
@@ -291,25 +282,42 @@ try:
   j=json.load(sys.stdin)
   print(j.get("session",{}).get("sid",""))
 except Exception:
-  print("")' || true)"
+  print("")' 2>/dev/null || true)"
 
-  [[ -n "${sid}" ]] || return 1
+  csrf="$(printf "%s" "${auth_json}" | python3 -c 'import sys,json;
+try:
+  j=json.load(sys.stdin)
+  print(j.get("session",{}).get("csrf",""))
+except Exception:
+  print("")' 2>/dev/null || true)"
 
-  # GET /api/dns/blocking
+  [[ -n "${sid}" && -n "${csrf}" ]] || return 1
+
+  # GET /api/dns/blocking (v6 returns "enabled"/"disabled" and timer)
   local st_json blocking
-  st_json="$(curl -fsS --max-time 4 \
+  st_json="$(curl -fsS --max-time 6 \
     -H "X-FTL-SID: ${sid}" \
+    -H "X-FTL-CSRF: ${csrf}" \
     "${baseurl}/api/dns/blocking" 2>/dev/null || true)"
 
   blocking="$(printf "%s" "${st_json}" | python3 -c 'import sys,json;
 try:
   j=json.load(sys.stdin)
-  b=j.get("blocking",None)
-  print("true" if b is True else ("false" if b is False else ""))
+  b=j.get("blocking","")
+  # v6 commonly returns "enabled" or "disabled"
+  if isinstance(b,str) and b in ("enabled","disabled"):
+    print(b)
+  # allow boolean fallback just in case
+  elif b is True:
+    print("enabled")
+  elif b is False:
+    print("disabled")
+  else:
+    print("")
 except Exception:
-  print("")' || true)"
+  print("")' 2>/dev/null || true)"
 
-  [[ "${blocking}" == "true" || "${blocking}" == "false" ]]
+  [[ "${blocking}" == "enabled" || "${blocking}" == "disabled" ]]
 }
 
 show_failure_menu(){
@@ -364,7 +372,7 @@ show_failure_menu(){
       1) return 10;;
       2) $show_pw && show_pw=false || show_pw=true;;
       3) return 20;;
-      4) warn "Continuing without validated API connectivity. If a Pi-hole is offline or credentials are wrong, the button will fail at runtime."; return 0;;
+      4) warn "Continuing without validated API connectivity. Runtime may fail if a Pi-hole is offline or credentials are wrong."; return 0;;
       5) exit 1;;
       *) echo "Enter 1, 2, 3, 4, or 5.";;
     esac
@@ -493,7 +501,6 @@ run_api_tests(){
     return 0
   fi
 
-  # failure menu
   show_failure_menu failures
   return $?
 }
@@ -512,17 +519,13 @@ main(){
     if [[ "${rc}" -eq 0 ]]; then
       break
     elif [[ "${rc}" -eq 10 ]]; then
-      # edit inputs
       continue
     elif [[ "${rc}" -eq 20 ]]; then
-      # retry validation without re-prompting
       run_api_tests
       rc2=$?
       [[ "${rc2}" -eq 0 ]] && break
-      # if still failing, loop back to menu again
       continue
     else
-      # continue anyway or other path
       break
     fi
   done

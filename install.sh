@@ -399,10 +399,10 @@ collect_settings(){
   fi
   echo
 
-  prompt PORT "Port to listen on" "80" "no"
+  prompt PORT "Port to listen on" "8080" "no"
   while ! valid_port "${PORT}"; do
     err "Invalid port."
-    prompt PORT "Port to listen on" "80" "no"
+    prompt PORT "Port to listen on" "8080" "no"
   done
 
   prompt DISABLE_MINUTES "Disable time in MINUTES (installer converts to seconds)" "10" "no"

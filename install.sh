@@ -358,9 +358,9 @@ show_failure_menu(){
 
     echo
     echo "Options:"
-    echo "  1) Edit inputs (re-run prompts)"
+    echo "  1) Edit (re-run prompts)"
     echo "  2) Toggle show password ($( $show_pw && echo "ON" || echo "OFF" ))"
-    echo "  3) Retry validation"
+    echo "  3) Retry test"
     echo "  4) Continue anyway (installer could not verify API connectivity)"
     echo "  5) Exit"
     echo
@@ -385,10 +385,10 @@ collect_settings(){
   primary="${ipinfo%%|*}"
   all="${ipinfo#*|}"
 
-  bold "Event Horizon installer (Pi-hole v6 only)"
+  bold "Event Horizon installer"
   echo
   warn "This installer does NOT support Pi-hole v5. If you are on v5, stop now."
-  warn "This service has NO TLS and NO login. You MUST firewall it yourself."
+  warn "This service has NO TLS and NO login. Ensure it is firewalled properly and do not open it to the internet."
   echo
 
   if [[ -n "${primary}" ]]; then

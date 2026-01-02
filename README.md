@@ -121,9 +121,6 @@ sudo rm /etc/systemd/system/event-horizon.service
 sudo systemctl daemon-reload
 ```
 
-**License**
-This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
-
 **Acknowledgments**
 Pi-hole v6 for providing an easy-to-use and powerful ad-blocking solution.
 The Python community for their continued work on the Python ecosystem.

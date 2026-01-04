@@ -65,8 +65,8 @@ DISABLE_SECONDS = max(60, DISABLE_MINUTES * 60)
 SHOW_LOG_LINK = cfg_bool("SHOW_LOG_LINK", True)
 PIHOLE_COUNT = cfg_int("PIHOLE_COUNT", 1)
 
-# Determine log location consistent with systemd unit
-LOG_DIR = "/var/log/event-horizon"
+# Determine log location - configurable for Docker volumes, fallback for non-Docker
+LOG_DIR = cfg_str("LOG_DIR", "/var/log/event-horizon")
 REQUESTS_LOG = os.path.join(LOG_DIR, "requests.log")
 
 

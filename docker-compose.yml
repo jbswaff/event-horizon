@@ -10,6 +10,8 @@ services:
     volumes:
       # Mount server.py for live development
       - ./server.py:/app/server.py:ro
+      # Persist logs across container restarts
+      - ./logs:/var/logs/event-horizon
     env_file:
       - .env
     restart: unless-stopped

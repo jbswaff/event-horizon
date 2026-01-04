@@ -102,11 +102,17 @@ PIHOLE_1_PASSWORD=your_api_password_here
 docker run -d \
   --name event-horizon \
   -p 8080:8080 \
-  -v /var/log/event-horizon:/var/log/event-horizon \
+  -v /var/log/event-horizon:/var/log/event-horizon \ # Make sure I match the LOG_DIR in .env
   --env-file .env \
   --restart unless-stopped \
   event-horizon:latest
 ```
+
+   **Persisting logs across restarts**: The `-v` flag  binds the container's log directory to a host directory, ensuring logs persist across container restarts. By default, Event Horizon writes logs to `/var/logs/event-horizon` (configured via `LOG_DIR` in your `.env` file).
+   
+   To customize the log location:
+   - Update `LOG_DIR` in your `.env` file to your preferred path (e.g., `LOG_DIR=/custom/path/logs`)
+   - Update the volume mount to match: `-v /custom/path/logs:/custom/path/logs`
 
 5. **Access Event Horizon**:
    Navigate to `http://<your-server-ip>:8080` in your browser.

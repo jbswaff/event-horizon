@@ -43,7 +43,7 @@ Keeping with Pi-hole's block-hole theme, the name Event Horizon was inspired by 
 
 ## Installation
 
-To install the Event Horizon server, you can use the following one-line command. It will handle all the necessary steps, including the installation of dependencies and configuring the service.
+Event Horizon can be installed using either the automated installer script or Docker. Choose the method that best fits your environment.
 
 ### Requirements
 
@@ -53,16 +53,14 @@ To install the Event Horizon server, you can use the following one-line command.
 
 Event Horizon is lightweight by design and can be run alongside Pi-hole, even on a Raspberry Pi. Only one instance of Event Horizon is needed for a group of Pi-holes, as it is able to manage multiple Pi-hole instances.
 
-### Installation Steps
+### Option 1: Automated Installation Script
 
 1. **Run the installer**:
    The easiest method is to use `curl` to download and execute the installer:
 
-
 ```
 curl -fsSL https://raw.githubusercontent.com/jbswaff/event-horizon/main/install.sh | sudo bash
 ```
-
 
 2. **During installation**, you will be prompted to provide the following configuration details:
 - The **Pi-hole IP addresses** and **API password** for each Pi-hole instance. It is recommended to use an application password generated from the Pi-hole web UI instead of your top-level password.
@@ -71,7 +69,47 @@ curl -fsSL https://raw.githubusercontent.com/jbswaff/event-horizon/main/install.
 
 The installation script will automatically configure the necessary files and services for you. The installer will automatically test API connectivity during the installation process, alerting you to an issue early.
 
----
+### Option 2: Docker Installation
+
+1. **Clone the repository**:
+```bash
+git clone https://github.com/jbswaff/event-horizon.git
+cd event-horizon
+```
+
+2. **Build the Docker image**:
+```bash
+docker build -t event-horizon:latest .
+```
+
+3. **Create a configuration file**:
+   Copy the sample environment file and edit it with your Pi-hole configuration:
+```bash
+cp .env.sample .env
+```
+   Then edit `.env` with your Pi-hole details:
+```bash
+PORT=8080
+DISABLE_MINUTES=10
+SHOW_LOG_LINK=true
+PIHOLE_COUNT=1
+PIHOLE_1_IP=192.168.1.100
+PIHOLE_1_PASSWORD=your_api_password_here
+```
+
+4. **Run the container**:
+```bash
+docker run -d \
+  --name event-horizon \
+  -p 8080:8080 \
+  -v /var/log/event-horizon:/var/log/event-horizon \
+  --env-file .env \
+  --restart unless-stopped \
+  event-horizon:latest
+```
+
+5. **Access Event Horizon**:
+   Navigate to `http://<your-server-ip>:8080` in your browser.
 
 ## Configuration File
 
@@ -92,6 +130,33 @@ The logs contain:
 - The **IP address** of the user who triggered the action.
 - The **Pi-hole instances** affected and their responses.
 - The **time** when the action was performed. Be sure to check the time zone of the system running Event Viewer to avoid confusion later.
+
+
+---
+
+## Development
+
+For local development with hot-reload capabilities, use Docker Compose:
+
+1. **Create a `.env` file** from the sample and configure your Pi-hole settings:
+```bash
+cp .env.sample .env
+```
+
+2. **Start the development environment**:
+```bash
+docker compose up
+```
+
+The development container uses `watchfiles` to automatically reload the server when you make changes to [server.py](server.py). Your local [server.py](server.py) file is mounted into the container, so any edits you make will immediately trigger a reload.
+
+3. **Access the development server**:
+   Navigate to `http://localhost:8080` in your browser.
+
+4. **Stop the development environment**:
+```bash
+docker compose down
+```
 
 ---
 

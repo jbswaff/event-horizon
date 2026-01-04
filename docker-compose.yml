@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  event-horizon:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "${PORT:-8080}:${PORT:-8080}"
+    volumes:
+      # Mount server.py for live development
+      - ./server.py:/app/server.py:ro
+    env_file:
+      - .env
+    restart: unless-stopped

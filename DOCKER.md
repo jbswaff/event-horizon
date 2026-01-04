@@ -14,9 +14,11 @@ docker build -t event-horizon .
 docker run -d \
   --name event-horizon \
   -p 8080:8080 \
+  -v /var/log/event-horizon:/var/log/event-horizon \
   -e PORT=8080 \
   -e DISABLE_MINUTES=10 \
   -e SHOW_LOG_LINK=true \
+  -e LOG_DIR=/var/log/event-horizon \
   -e PIHOLE_COUNT=1 \
   -e PIHOLE_1_NAME=pihole1 \
   -e PIHOLE_1_URL=http://192.168.1.100:80 \
@@ -30,9 +32,11 @@ docker run -d \
 docker run -d \
   --name event-horizon \
   -p 8080:8080 \
+  -v /var/log/event-horizon:/var/log/event-horizon \
   -e PORT=8080 \
   -e DISABLE_MINUTES=10 \
   -e SHOW_LOG_LINK=true \
+  -e LOG_DIR=/var/log/event-horizon \
   -e PIHOLE_COUNT=2 \
   -e PIHOLE_1_NAME=pihole-primary \
   -e PIHOLE_1_URL=http://192.168.1.100:80 \
@@ -42,6 +46,26 @@ docker run -d \
   -e PIHOLE_2_APP_PASSWORD=password2 \
   event-horizon
 ```
+
+## Persisting Logs
+
+To ensure logs persist across container restarts and removals, use a volume mount:
+
+```bash
+-v /var/log/event-horizon:/var/log/event-horizon
+```
+
+**To customize the log location:**
+
+1. Set `LOG_DIR` environment variable to your preferred path:
+   ```bash
+   -e LOG_DIR=/custom/path/logs
+   ```
+
+2. Update the volume mount to match:
+   ```bash
+   -v /custom/path/logs:/custom/path/logs
+   ```
 
 ## Using Docker Compose
 
@@ -87,6 +111,7 @@ The development setup includes:
 | `PORT` | Port to listen on | `8080` |
 | `DISABLE_MINUTES` | Minutes to disable protection | `10` |
 | `SHOW_LOG_LINK` | Show logs link on main page | `true` |
+| `LOG_DIR` | Directory for log files | `/var/log/event-horizon` |
 | `PIHOLE_COUNT` | Number of Pi-hole instances | `1` |
 | `PIHOLE_N_NAME` | Friendly name for Pi-hole N | `piholeN` |
 | `PIHOLE_N_URL` | Full URL for Pi-hole N | (required) |

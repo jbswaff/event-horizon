@@ -14,7 +14,6 @@ from urllib.parse import urlparse, parse_qs
 
 CONF_PATH = os.environ.get("EH_CONF", "/etc/event-horizon/event-horizon.conf")
 
-
 def load_conf(path: str) -> dict:
     cfg = {}
     try:
@@ -36,19 +35,28 @@ CFG = load_conf(CONF_PATH)
 
 
 def cfg_int(key: str, default: int) -> int:
+    # Check environment variable first, then config file
+    val = os.environ.get(key, CFG.get(key, str(default)))
     try:
-        return int(CFG.get(key, str(default)).strip())
+        return int(str(val).strip())
     except Exception:
         return default
 
 
 def cfg_bool(key: str, default: bool) -> bool:
-    v = CFG.get(key, str(default)).strip().lower()
+    # Check environment variable first, then config file
+    val = os.environ.get(key, CFG.get(key, str(default)))
+    v = str(val).strip().lower()
     if v in ("true", "1", "yes", "y"):
         return True
     if v in ("false", "0", "no", "n"):
         return False
     return default
+
+
+def cfg_str(key: str, default: str = "") -> str:
+    # Check environment variable first, then config file
+    return os.environ.get(key, CFG.get(key, default)).strip()
 
 
 PORT = cfg_int("PORT", 8080)
@@ -57,8 +65,8 @@ DISABLE_SECONDS = max(60, DISABLE_MINUTES * 60)
 SHOW_LOG_LINK = cfg_bool("SHOW_LOG_LINK", True)
 PIHOLE_COUNT = cfg_int("PIHOLE_COUNT", 1)
 
-# Determine log location consistent with systemd unit
-LOG_DIR = "/var/log/event-horizon"
+# Determine log location - configurable for Docker volumes, fallback for non-Docker
+LOG_DIR = cfg_str("LOG_DIR", "/var/log/event-horizon")
 REQUESTS_LOG = os.path.join(LOG_DIR, "requests.log")
 
 
@@ -87,9 +95,9 @@ def log_request(client_ip: str, action: str, details: str = ""):
 def get_piholes():
     piholes = []
     for i in range(1, PIHOLE_COUNT + 1):
-        name = CFG.get(f"PIHOLE_{i}_NAME", f"pihole{i}").strip() or f"pihole{i}"
-        base = CFG.get(f"PIHOLE_{i}_URL", "").strip()
-        pw = CFG.get(f"PIHOLE_{i}_APP_PASSWORD", "").strip()
+        name = cfg_str(f"PIHOLE_{i}_NAME", f"pihole{i}") or f"pihole{i}"
+        base = cfg_str(f"PIHOLE_{i}_URL", "")
+        pw = cfg_str(f"PIHOLE_{i}_APP_PASSWORD", "")
         if base and pw:
             piholes.append({"idx": i, "name": name, "base": base.rstrip("/"), "pw": pw})
     return piholes

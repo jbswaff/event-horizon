@@ -1,0 +1,12 @@
+# Ignore non-essential files
+*.md
+LICENSE
+install.sh
+images/
+.git/
+.gitignore
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.DS_Store

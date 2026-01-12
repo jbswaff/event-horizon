@@ -95,7 +95,7 @@ EH_API_RETRY_DELAY=1         # Initial retry delay (exponential backoff)
 - Migrated from global disable to per-client bypass
 - Improved error handling and display
 
-## [0.2.0-beta.1] - 2026-01-04
+## [0.2.0-beta.1]
 
 ### Added
 

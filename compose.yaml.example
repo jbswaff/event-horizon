@@ -1,0 +1,62 @@
+# Example Docker Compose configuration for Event Horizon
+# Copy this file to compose.yaml and fill in your Pi-hole details
+#
+# Usage:
+#   cp compose.yaml.example compose.yaml
+#   # Edit compose.yaml with your Pi-hole URLs and app passwords
+#   docker compose up -d
+
+services:
+  event-horizon:
+    build: .
+    # Or use the published image:
+    # image: ghcr.io/jbswaff/event-horizon:latest
+    container_name: event-horizon
+    restart: unless-stopped
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      EH_PORT: "8080"
+
+      # Bypass settings
+      EH_DISABLE_MINUTES: "10"
+      EH_COOLDOWN_SECONDS: "3"
+      EH_BYPASS_GROUP_NAME: "Event-Horizon-Bypass"
+
+      # UI settings
+      EH_SHOW_LOG_LINK: "true"
+      EH_HEALTH_CACHE_SECONDS: "5"
+
+      # Reverse proxy settings (set to true if behind nginx/traefik)
+      EH_TRUST_PROXY: "false"
+      EH_TRUSTED_PROXY_NETS: "10.0.0.0/8,192.168.0.0/16"
+
+      # Pi-hole configuration
+      # Set EH_PIHOLE_COUNT to the number of Pi-holes you have
+      EH_PIHOLE_COUNT: "1"
+
+      # Pi-hole 1
+      EH_PIHOLE_1_NAME: "pihole"
+      EH_PIHOLE_1_URL: "http://YOUR_PIHOLE_IP"
+      EH_PIHOLE_1_APP_PASSWORD: "YOUR_APP_PASSWORD_HERE"
+
+      # Pi-hole 2 (uncomment and set EH_PIHOLE_COUNT=2 for multiple Pi-holes)
+      # EH_PIHOLE_2_NAME: "pihole2"
+      # EH_PIHOLE_2_URL: "http://YOUR_SECOND_PIHOLE_IP"
+      # EH_PIHOLE_2_APP_PASSWORD: "YOUR_SECOND_APP_PASSWORD"
+
+      # Optional: API settings
+      # EH_VERIFY_SSL: "true"
+      # EH_API_TIMEOUT: "15"
+      # EH_SESSION_CACHE_TTL: "300"
+
+      # Optional: Logging settings
+      # EH_API_LOG_ENABLED: "true"
+      # EH_LOG_MAX_SIZE_MB: "10"
+      # EH_LOG_MAX_AGE_DAYS: "7"
+
+      # Optional: Rate limiting
+      # EH_RATE_LIMIT_REQUESTS: "10"
+      # EH_RATE_LIMIT_WINDOW: "3600"

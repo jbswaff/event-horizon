@@ -1,14 +1,15 @@
-# Event Horizon - v0.3.2-beta.1
+# Event Horizon
 
-Per-client ad-blocking bypass for Pi-hole v6. Allows individual devices to temporarily pause ad blocking without affecting other users on the network.
+Per-client ad-blocking bypass for Pi-hole v6. Allows individual devices to temporarily pause ad blocking without affecting other users or devices on the network.
 
 ## Features
 
+- **Simple user interface**: The web UI presents a single pushbutton for for the ease of non-technical users
 - **Per-client bypass**: Only the requesting device gets ad blocking paused
 - **Automatic restore**: Filtering resumes automatically after the configured duration
 - **Multi Pi-hole support**: Works with multiple Pi-hole instances simultaneously
 - **Cancel anytime**: Users can resume blocking early with one click
-- **Dark mode**: Respects system color scheme preference
+- **Dark mode UI**: Respects system color scheme preference
 - **Session caching**: Reduces API calls and avoids session limits
 - **API logging**: Full request/response logging for debugging
 - **Health endpoint**: JSON health status for monitoring and Docker healthchecks
@@ -36,7 +37,7 @@ services:
       EH_PIHOLE_COUNT: "1"
       EH_PIHOLE_1_NAME: "pihole"
       EH_PIHOLE_1_URL: "http://192.168.1.2"
-      EH_PIHOLE_1_APP_PASSWORD: "your-app-password-here"
+      EH_PIHOLE_1_APP_PASSWORD: "pihole1-app-password"
 ```
 
 2. Start the container:
@@ -53,6 +54,7 @@ docker compose up -d
 2. Go to **Settings** > **API** > **App Password**
 3. Generate a new app password
 4. Copy the password and use it for `EH_PIHOLE_X_APP_PASSWORD`
+5. Store the password in a safe location; it will not be displayed again!
 
 ## Configuration
 
@@ -121,11 +123,11 @@ environment:
 
   EH_PIHOLE_1_NAME: "pihole-primary"
   EH_PIHOLE_1_URL: "http://192.168.1.2"
-  EH_PIHOLE_1_APP_PASSWORD: "password-for-primary"
+  EH_PIHOLE_1_APP_PASSWORD: "pihole1-app-password"
 
   EH_PIHOLE_2_NAME: "pihole-secondary"
   EH_PIHOLE_2_URL: "http://192.168.1.3"
-  EH_PIHOLE_2_APP_PASSWORD: "password-for-secondary"
+  EH_PIHOLE_2_APP_PASSWORD: "pihole2-app-password"
 ```
 
 ## Reverse Proxy Configuration
